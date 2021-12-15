@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Experience {
+  id    String @id @default(uuid())
+  name  String @unique
+  level Int    @unique
+
+  users        User[]
+  exerciseMins Exercise[] @relation("minExperience")
+  exerciseMaxs Exercise[] @relation("maxExperience")
+  trainings    Training[]
+
+  @@map("experiences")
+}
+
+model User {
+  id                       String  @id @default(uuid())
+  first_name               String
+  last_name                String
+  phone_number             String  @unique
+  code                     Int
+  level                    Int     @default(1)
+  current_xp               Int     @default(0)
+  xp_to_next_level         Int
+  is_trainer               Boolean @default(false)
+  training_frequency_hours Int
+  experience_id            String
+
+  experience Experience @relation(fields: [experience_id], references: [id])
+  invites    Invite[]
+  trainings  Training[]
+  currents   Current[]
+
+  @@map("users")
+}
+
+model Invite {
+  id         String   @id @default(uuid())
+  code       Int      @unique
+  created_at DateTime @default(now())
+  expires_in DateTime
+  user_id    String
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("invites")
+}
+
+model Category {
+  id   String @id @default(uuid())
+  name String @unique
+
+  exercises     Exercise[]
+  trainingItems TrainingItem[]
+
+  @@map("categories")
+}
+
+model Exercise {
+  id                String  @id @default(uuid())
+  name              String  @unique
+  xp_amount         Int
+  category_id       String
+  min_experience_id String?
+  max_experience_id String?
+
+  category         Category          @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  minExperience    Experience?       @relation("minExperience", fields: [min_experience_id], references: [id])
+  maxExperience    Experience?       @relation("maxExperience", fields: [max_experience_id], references: [id])
+  trainingItems    TrainingItem[]
+  currentExercises CurrentExercise[]
+
+  @@map("exercises")
+}
+
+model Training {
+  id            String  @id @default(uuid())
+  name          String
+  week_day      Int?
+  user_id       String?
+  experience_id String?
+
+  user          User?          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  experience    Experience?    @relation(fields: [experience_id], references: [id], onDelete: Cascade)
+  trainingItems TrainingItem[]
+  currents      Current[]
+
+  @@map("trainings")
+}
+
+model TrainingItem {
+  id          String  @id @default(uuid())
+  amount      Int?
+  times       Int
+  series      Int
+  training_id String
+  category_id String?
+  exercise_id String?
+
+  training Training  @relation(fields: [training_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  category Category? @relation(fields: [category_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  exercise Exercise? @relation(fields: [exercise_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("training_items")
+}
+
+model Current {
+  id          String    @id @default(uuid())
+  started_at  DateTime  @default(now())
+  ended_at    DateTime?
+  user_id     String
+  training_id String
+
+  user             User              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  training         Training          @relation(fields: [training_id], references: [id], onUpdate: Cascade)
+  currentExercises CurrentExercise[]
+
+  @@map("currents")
+}
+
+model CurrentExercise {
+  id           String    @id @default(uuid())
+  concluded_at DateTime?
+  exited_at    DateTime?
+  times        Int
+  series       Int
+  current_id   String
+  exercise_id  String
+
+  current  Current  @relation(fields: [current_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  exercise Exercise @relation(fields: [exercise_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("current_exercises")
+}

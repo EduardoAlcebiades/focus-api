@@ -1,0 +1,9 @@
+node_modules
+
+.env
+
+*.lock
+yarn*
+
+prisma/*.db
+prisma/migrations
